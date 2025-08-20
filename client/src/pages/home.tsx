@@ -2,19 +2,22 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { AnalyzeRequest, AnalyzeResponse } from "@shared/schema";
+import type { AnalyzeRequest, AnalyzeUrlRequest, AnalyzeResponse } from "@shared/schema";
 import HtmlInput from "@/components/html-input";
 import ScoreDisplay from "@/components/score-display";
 import AnalysisResults from "@/components/analysis-results";
 
 export default function Home() {
+  const [mode, setMode] = useState<"html" | "url">("html");
   const [htmlCode, setHtmlCode] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [analysisResults, setAnalysisResults] = useState<AnalyzeResponse | null>(null);
   const { toast } = useToast();
 
   const analysisMutation = useMutation({
-    mutationFn: async (data: AnalyzeRequest) => {
-      const response = await apiRequest("POST", "/api/analyze", data);
+    mutationFn: async (data: AnalyzeRequest | AnalyzeUrlRequest) => {
+      const endpoint = "htmlCode" in data ? "/api/analyze" : "/api/analyze-url";
+      const response = await apiRequest("POST", endpoint, data);
       return response.json();
     },
     onSuccess: (data: AnalyzeResponse) => {
@@ -34,21 +37,33 @@ export default function Home() {
   });
 
   const handleAnalyze = () => {
-    if (!htmlCode.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter HTML code to analyze",
-        variant: "destructive",
-      });
-      return;
+    if (mode === "html") {
+      if (!htmlCode.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter HTML code to analyze",
+          variant: "destructive",
+        });
+        return;
+      }
+      analysisMutation.mutate({ htmlCode });
+    } else {
+      if (!websiteUrl.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter a website URL to analyze",
+          variant: "destructive",
+        });
+        return;
+      }
+      analysisMutation.mutate({ url: websiteUrl });
     }
-    
-    analysisMutation.mutate({ htmlCode });
   };
 
   const handleNewAnalysis = () => {
     setAnalysisResults(null);
     setHtmlCode("");
+    setWebsiteUrl("");
   };
 
   const sampleHTML = `<!DOCTYPE html>
@@ -96,11 +111,21 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <HtmlInput
-              value={htmlCode}
-              onChange={setHtmlCode}
+              mode={mode}
+              onModeChange={setMode}
+              htmlValue={htmlCode}
+              urlValue={websiteUrl}
+              onHtmlChange={setHtmlCode}
+              onUrlChange={setWebsiteUrl}
               onAnalyze={handleAnalyze}
               onLoadSample={() => setHtmlCode(sampleHTML)}
-              onClear={() => setHtmlCode("")}
+              onClear={() => {
+                if (mode === "html") {
+                  setHtmlCode("");
+                } else {
+                  setWebsiteUrl("");
+                }
+              }}
               isAnalyzing={analysisMutation.isPending}
             />
             

@@ -4,6 +4,10 @@ export const analyzeRequestSchema = z.object({
   htmlCode: z.string().min(1, "HTML code is required"),
 });
 
+export const analyzeUrlRequestSchema = z.object({
+  url: z.string().url("Please enter a valid URL"),
+});
+
 export const seoCheckSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -24,5 +28,6 @@ export const analyzeResponseSchema = z.object({
 });
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;
+export type AnalyzeUrlRequest = z.infer<typeof analyzeUrlRequestSchema>;
 export type SeoCheck = z.infer<typeof seoCheckSchema>;
 export type AnalyzeResponse = z.infer<typeof analyzeResponseSchema>;

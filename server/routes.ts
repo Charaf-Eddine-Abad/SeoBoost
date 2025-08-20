@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import * as cheerio from "cheerio";
-import { analyzeRequestSchema } from "@shared/schema";
+import axios from "axios";
+import { analyzeRequestSchema, analyzeUrlRequestSchema } from "@shared/schema";
 import type { AnalyzeResponse, SeoCheck } from "@shared/schema";
 
 function analyzeSEO(htmlCode: string): AnalyzeResponse {
@@ -179,6 +180,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       if (error instanceof Error) {
+        res.status(400).json({ 
+          message: "Invalid request data",
+          error: error.message 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Internal server error" 
+        });
+      }
+    }
+  });
+
+  app.post("/api/analyze-url", async (req, res) => {
+    try {
+      const validatedData = analyzeUrlRequestSchema.parse(req.body);
+      
+      // Fetch HTML content from URL
+      const response = await axios.get(validatedData.url, {
+        timeout: 10000, // 10 second timeout
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      
+      // Analyze the fetched HTML
+      const result = analyzeSEO(response.data);
+      res.json(result);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+          res.status(400).json({ 
+            message: "Website not reachable",
+            error: "Could not connect to the specified URL. Please check if the website is online and accessible." 
+          });
+        } else if (error.code === 'ECONNABORTED') {
+          res.status(400).json({ 
+            message: "Request timeout",
+            error: "The website took too long to respond. Please try again later." 
+          });
+        } else {
+          res.status(400).json({ 
+            message: "Failed to fetch website",
+            error: error.message || "An error occurred while fetching the website content." 
+          });
+        }
+      } else if (error instanceof Error) {
         res.status(400).json({ 
           message: "Invalid request data",
           error: error.message 
