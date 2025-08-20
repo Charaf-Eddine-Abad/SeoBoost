@@ -83,14 +83,14 @@ export default function HtmlInput({
             <TabsContent value="url" className="space-y-4 mt-0">
               <div>
                 <Input
-                  type="url"
+                  type="text"
                   value={urlValue}
                   onChange={(e) => onUrlChange(e.target.value)}
-                  placeholder="https://example.com"
+                  placeholder="example.com or www.example.com"
                   className="w-full h-12 p-4 border-2 border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors duration-200 text-sm bg-gray-50"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Enter a complete URL including http:// or https://
+                  Just enter the domain name - https:// will be added automatically
                 </p>
               </div>
               <div className="h-48 flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg">
